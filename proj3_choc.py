@@ -52,13 +52,70 @@ def init_db():
                 'Region' TEXT NOT NULL,
                 'Subregion' TEXT NOT NULL,
                 'Population' INTEGER NOT NULL,
-                'Area' REAL NOT NULL
+                'Area' REAL
         );
     '''
     cur.execute(statement)
 
     conn.commit()
     conn.close()
+
+def insert_json_data():
+    file = open(COUNTRIESJSON, 'r')
+    content = file.read()
+    data = json.loads(content)
+    file.close()
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+    for d in data:
+        statement = '''
+            INSERT INTO 'Countries' (Id, Alpha2, Alpha3, EnglishName, Region, Subregion, Population, Area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        '''
+        cur.execute(statement, (None, d['alpha2Code'], d['alpha3Code'], d['name'], d['region'], d['subregion'], d['population'], d['area']))
+    conn.commit()
+    conn.close()
+    '''
+    dumped_file = json.dumps(data, indent=4)
+    fw = open(COUNTRIESJSON,"w")
+    fw.write(dumped_file)
+    fw.close()
+    '''
+
+def insert_csv_data():
+    with open(BARSCSV) as f:
+        csvReader = csv.reader(f)
+        conn = sqlite3.connect(DBNAME)
+        cur = conn.cursor()
+        country_dict = {}
+        state_dict = {}
+        city_dict = {}
+        for row in csvReader:
+            if row[2] == "city":
+                continue
+            # city
+            if row[2] not in city_dict:
+                city_dict[row[2]] = 0
+                cur.execute("INSERT INTO 'City' (name) VALUES (?)", (row[2],))
+            # state
+            if row[3] not in state_dict:
+                state_dict[row[3]] = 0
+                cur.execute("INSERT INTO 'State' (name) VALUES (?)", (row[3],))
+            # country
+            if row[4] not in country_dict:
+                country_dict[row[4]] = 0
+                cur.execute("INSERT INTO 'Country' (name) VALUES (?)", (row[4],))
+            statement = '''
+                INSERT INTO 'Airport' (iata, airport, city, state, country, lat, long, cnt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            '''
+
+            city_id = cur.execute("SELECT id FROM 'City' WHERE name=?", (row[2],)).fetchone()[0]
+            state_id = cur.execute("SELECT id FROM 'State' WHERE name=?", (row[3],)).fetchone()[0]
+            country_id = cur.execute("SELECT id FROM 'Country' WHERE name=?", (row[4],)).fetchone()[0]
+
+            cur.execute(statement, (row[0], row[1], city_id, state_id, country_id, row[5], row[6], row[7]))
+
+        conn.commit()
+        conn.close()
 
 
 # Part 2: Implement logic to process user commands
@@ -85,3 +142,4 @@ def interactive_prompt():
 if __name__=="__main__":
     # interactive_prompt()
     init_db()
+    insert_json_data()
