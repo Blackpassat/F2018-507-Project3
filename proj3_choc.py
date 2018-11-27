@@ -99,7 +99,7 @@ def insert_csv_data():
             else:
                 broad_bean_origin_id = cur.execute("SELECT Id FROM 'Countries' WHERE EnglishName=?", (row[8],)).fetchone()[0]
 
-            cur.execute(statement, (None, row[0], row[1], row[2], row[3], row[4][:-1], company_location_id, row[6], row[7], broad_bean_origin_id))
+            cur.execute(statement, (None, row[0], row[1], row[2], row[3], float(row[4][:-1])*0.01, company_location_id, row[6], row[7], broad_bean_origin_id))
 
         conn.commit()
         conn.close()
@@ -159,7 +159,56 @@ def bars_command(command):
     return result
 
 def companies_command(command):
-    pass
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+    words = command.split()
+    sellcountry = ''
+    sourcecountry = ''
+    sellregion = ''
+    sourceregion = ''
+    statement2 = 'AVG(B.Rating) AS ratings'
+    order = 'ratings'
+    sort = 'DESC'
+    limit = 10
+    statement1 = 'SELECT B.Company, C1.EnglishName, '
+    statement3 = '''
+        FROM Bars B
+        JOIN Countries C1
+            ON B.CompanyLocationId = C1.Id
+        GROUP BY B.Company
+        HAVING COUNT(B.SpecificBeanBarName) > 4
+    '''
+    for w in words:
+        if 'country' in w:
+            sellcountry = w[w.index('=')+1:]
+            statement4 = 'AND C1.Alpha2="' + sellcountry + '"'
+        if 'region' in w:
+            sellregion = w[w.index('=')+1:]
+            statement4 = 'AND C1.Region="' + sellregion + '"'
+        if 'cocoa' in w:
+            statement2 = 'AVG(B.CocoaPercent) AS cocoas'
+            order = 'cocoas'
+        if 'bars_sold' in w:
+            statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
+            order = 'kinds'
+        if 'bottom' in w:
+            sort = 'ASC'
+            limit = int(w[w.index('=')+1:])
+        if 'top' in w:
+            limit = int(w[w.index('=')+1:])
+
+    if sellcountry=='' and sellregion=='':
+        statement4 = ''
+
+    statement = statement1 + statement2 + statement3 + statement4 + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
+    # print(statement)
+    cur.execute(statement)
+    result = cur.fetchall()
+    conn.close()
+
+    # print(pp(cur, result, rowlens=1))
+
+    return result
 
 def countries_command(command):
     pass
@@ -168,7 +217,7 @@ def regions_command(command):
     pass
 
 def process_command(command):
-    if 'bars' in command:
+    if 'bars' in command[:10]:
         result = bars_command(command)
     elif 'companies' in command:
         result = companies_command(command)
@@ -231,4 +280,4 @@ if __name__=="__main__":
     init_db()
     insert_json_data()
     insert_csv_data()
-    process_command('bars sourceregion=Africa ratings top=5')
+    process_command('companies cocoa top=5 ')
