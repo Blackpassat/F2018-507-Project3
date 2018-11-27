@@ -12,6 +12,54 @@ DBNAME = 'choc.db'
 BARSCSV = 'flavors_of_cacao_cleaned.csv'
 COUNTRIESJSON = 'countries.json'
 
+def init_db():
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+
+    # Drop tables
+    statement = '''
+        DROP TABLE IF EXISTS 'Bars';
+    '''
+    cur.execute(statement)
+    statement = '''
+        DROP TABLE IF EXISTS 'Countries';
+    '''
+    cur.execute(statement)
+
+    statement = '''
+        CREATE TABLE 'Bars' (
+            'Id' INTEGER PRIMARY KEY AUTOINCREMENT,
+            'Company' TEXT NOT NULL,
+            'SpecificBeanBarName' TEXT NOT NULL,
+            'REF' Text NOT NULL,
+            'ReviewDate' TEXT NOT NULL,
+            'CocoaPercent' REAL NOT NULL,
+            'CompanyLocationId' INTEGER NOT NULL,
+            'Rating' Real NOT NULL,
+            'BeanType' TEXT,
+            'BroadBeanOriginId' INTEGER NOT NULL,
+            FOREIGN KEY(CompanyLocationId) REFERENCES Countries(Id),
+            FOREIGN KEY(BroadBeanOriginId) REFERENCES Countries(Id)
+        );
+    '''
+    cur.execute(statement)
+    statement = '''
+        CREATE TABLE 'Countries' (
+                'Id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                'Alpha2' TEXT NOT NULL,
+                'Alpha3' TEXT NOT NULL,
+                'EnglishName' TEXT NOT NULL,
+                'Region' TEXT NOT NULL,
+                'Subregion' TEXT NOT NULL,
+                'Population' INTEGER NOT NULL,
+                'Area' REAL NOT NULL
+        );
+    '''
+    cur.execute(statement)
+
+    conn.commit()
+    conn.close()
+
 
 # Part 2: Implement logic to process user commands
 def process_command(command):
@@ -35,4 +83,5 @@ def interactive_prompt():
 
 # Make sure nothing runs or prints out when this file is run as a module
 if __name__=="__main__":
-    interactive_prompt()
+    # interactive_prompt()
+    init_db()
