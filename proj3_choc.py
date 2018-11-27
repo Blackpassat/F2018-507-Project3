@@ -99,16 +99,116 @@ def insert_csv_data():
             else:
                 broad_bean_origin_id = cur.execute("SELECT Id FROM 'Countries' WHERE EnglishName=?", (row[8],)).fetchone()[0]
 
-            cur.execute(statement, (None, row[0], row[1], row[2], row[3], row[4], company_location_id, row[6], row[7], broad_bean_origin_id))
+            cur.execute(statement, (None, row[0], row[1], row[2], row[3], row[4][:-1], company_location_id, row[6], row[7], broad_bean_origin_id))
 
         conn.commit()
         conn.close()
 
 
 # Part 2: Implement logic to process user commands
-def process_command(command):
-    return []
+def bars_command(command):
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+    words = command.split()
+    sellcountry = ''
+    sourcecountry = ''
+    sellregion = ''
+    sourceregion = ''
+    order = 'B.Rating'
+    sort = 'DESC'
+    limit = 10
+    statement1 = '''
+        SELECT B.SpecificBeanBarName,B.Company, C1.EnglishName, B.Rating, B.CocoaPercent, C2.EnglishName
+        FROM Bars B
+        JOIN Countries C1
+            ON B.CompanyLocationId = C1.Id
+        JOIN Countries C2
+            ON B.BroadBeanOriginId = C2.Id
+    '''
+    for w in words:
+        if 'sellcountry' in w:
+            sellcountry = w[w.index('=')+1:]
+            statement2 = 'WHERE C1.Alpha2="' + sellcountry + '"'
+        if 'sourcecountry' in w:
+            sourcecountry = w[w.index('=')+1:]
+            statement2 = 'WHERE C2.Alpha2="' + sourcecountry + '"'
+        if 'sellregion' in w:
+            sellregion = w[w.index('=')+1:]
+            statement2 = 'WHERE C1.Region="' + sellregion + '"'
+        if 'sourceregion' in w:
+            sourceregion = w[w.index('=')+1:]
+            statement2 = 'WHERE C2.Region="' + sourceregion + '"'
+        if 'cocoa' in w:
+            order = 'B.CocoaPercent'
+        if 'bottom' in w:
+            sort = 'ASC'
+            limit = int(w[w.index('=')+1:])
+        if 'top' in w:
+            limit = int(w[w.index('=')+1:])
 
+    if sellcountry=='' and sourcecountry=='' and sellregion=='' and sourceregion=='':
+        statement2 = ''
+
+    statement = statement1 + statement2 + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
+    cur.execute(statement)
+    result = cur.fetchall()
+    conn.close()
+
+    # print(pp(cur, result, rowlens=1))
+
+    return result
+
+def companies_command(command):
+    pass
+
+def countries_command(command):
+    pass
+
+def regions_command(command):
+    pass
+
+def process_command(command):
+    if 'bars' in command:
+        result = bars_command(command)
+    elif 'companies' in command:
+        result = companies_command(command)
+    elif 'countries' in command:
+        result = countries_command(command)
+    elif 'regions' in command:
+        result = regions_command(command)
+    else:
+        print('Invalid input')
+        result = None
+
+    return result
+
+def pp(cursor, data=None, rowlens=0):
+    d = cursor.description
+    if not d:
+        return "#### NO RESULTS ###"
+    names = []
+    lengths = []
+    rules = []
+    if not data:
+        data = cursor.fetchall(  )
+    for dd in d:    # iterate over description
+        l = dd[1]
+        if not l:
+            l = 12             # or default arg ...
+        l = max(l, len(dd[0])) # Handle long names
+        names.append(dd[0])
+        lengths.append(l)
+    for col in range(len(lengths)):
+        if rowlens:
+            rls = [len(row[col]) for row in data if row[col] and isinstance(row[col], str)]
+            lengths[col] = max([lengths[col]]+rls)
+        rules.append("-"*lengths[col])
+    format = " ".join(["%%-%ss" % l for l in lengths])
+    result = [format % tuple(names)]
+    result.append(format % tuple(rules))
+    for row in data:
+        result.append(format % row)
+    return "\n".join(result)
 
 def load_help_text():
     with open('help.txt') as f:
@@ -131,3 +231,4 @@ if __name__=="__main__":
     init_db()
     insert_json_data()
     insert_csv_data()
+    process_command('bars sourceregion=Africa ratings top=5')

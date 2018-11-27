@@ -19,7 +19,7 @@ class TestDatabase(unittest.TestCase):
 
         sql = '''
             SELECT Company, SpecificBeanBarName, CocoaPercent,
-                   Rating, BroadBeanOrigin
+                   Rating, BroadBeanOriginId
             FROM Bars
             WHERE Company="Woodblock"
             ORDER BY Rating DESC
