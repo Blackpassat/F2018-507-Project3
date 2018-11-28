@@ -120,9 +120,9 @@ def bars_command(command):
     statement1 = '''
         SELECT B.SpecificBeanBarName,B.Company, C1.EnglishName, B.Rating, B.CocoaPercent, C2.EnglishName
         FROM Bars B
-        JOIN Countries C1
+        LEFT JOIN Countries C1
             ON B.CompanyLocationId = C1.Id
-        JOIN Countries C2
+        LEFT JOIN Countries C2
             ON B.BroadBeanOriginId = C2.Id
     '''
     for w in words:
@@ -276,21 +276,23 @@ def regions_command(command):
     statement1 = 'SELECT C1.Region, '
     statement2 = 'AVG(B.Rating) AS ratings '
     statement3 = 'GROUP BY C1.Region'
+    statement4 = 'AND C1.Region IS NOT NULL'
     order = 'ratings'
     sort = 'DESC'
     limit = 10
     
     statement5 = '''
         FROM Bars B
-        JOIN Countries C1
+        LEFT JOIN Countries C1
             ON B.CompanyLocationId = C1.Id
-        JOIN Countries C2
+        LEFT JOIN Countries C2
             ON B.BroadBeanOriginId = C2.Id
     '''
     for w in words:
         if 'sources' in w:
             statement1 = 'SELECT C2.Region, '
             statement3 = 'GROUP BY C2.Region'
+            statement4 = 'AND C2.Region IS NOT NULL'
         if 'cocoa' in w:
             statement2 = 'AVG(B.CocoaPercent) AS cocoas'
             order = 'cocoas'
@@ -303,7 +305,7 @@ def regions_command(command):
         if 'top' in w:
             limit = int(w[w.index('=')+1:])
 
-    statement = statement1 + statement2 + statement5 + statement3 + ' HAVING COUNT(B.SpecificBeanBarName)>4 ' + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
+    statement = statement1 + statement2 + statement5 + statement3 + ' HAVING COUNT(B.SpecificBeanBarName)>4 ' + statement4 + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
     # print(statement)
     cur.execute(statement)
     result = cur.fetchall()
@@ -322,9 +324,12 @@ def process_command(command):
         result = countries_command(command)
     elif 'regions' in command:
         result = regions_command(command)
+    elif command == 'exit':
+        result = ''
+        print('Bye!')
     else:
-        print('Invalid input')
-        result = None
+        print('Invalid input. Type <help> for instructions. ')
+        result = []
 
     return result
 
@@ -361,20 +366,43 @@ def load_help_text():
         return f.read()
 
 # Part 3: Implement interactive prompt. We've started for you!
+def nice_print(result):
+    MAX_LENGTH = 15
+    if result == []:
+        print('Nothing Found. ')
+    for item in result:
+        line = ''
+        for i in item:
+            if i is None:
+                i = 'Unknown'
+            if isinstance(i, str):
+                length = len(i)
+                if length > 12:
+                    line += i[:12]+'... '
+                else:
+                    line += i+(MAX_LENGTH-length+1)*' '
+            else:
+                if i > 1.0:
+                    line += str(round(i, 1))+' '
+                else:
+                    line += str(int(round(i*100)))+'% '
+        print(line)
+
 def interactive_prompt():
     help_text = load_help_text()
     response = ''
     while response != 'exit':
         response = input('Enter a command: ')
-
+        result = process_command(response)
+        nice_print(result)
         if response == 'help':
             print(help_text)
             continue
 
 # Make sure nothing runs or prints out when this file is run as a module
 if __name__=="__main__":
-    # interactive_prompt()
     init_db()
     insert_json_data()
     insert_csv_data()
-    process_command('regions sellers ratings top=10')
+    # process_command('regions sellers ratings top=10')
+    interactive_prompt()
