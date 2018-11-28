@@ -174,7 +174,7 @@ def companies_command(command):
         JOIN Countries C1
             ON B.CompanyLocationId = C1.Id
         GROUP BY B.Company
-        HAVING COUNT(B.Id) > 4
+        HAVING COUNT(B.SpecificBeanBarName) > 4
     '''
     for w in words:
         if 'country' in w:
@@ -187,7 +187,7 @@ def companies_command(command):
             statement2 = 'AVG(B.CocoaPercent) AS cocoas'
             order = 'cocoas'
         if 'bars_sold' in w:
-            statement2 = 'COUNT(B.Id) AS kinds'
+            statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
             order = 'kinds'
         if 'bottom' in w:
             sort = 'ASC'
@@ -243,7 +243,7 @@ def countries_command(command):
             statement2 = 'AVG(B.CocoaPercent) AS cocoas'
             order = 'cocoas'
         if 'bars_sold' in w:
-            statement2 = 'COUNT(B.Id) AS kinds'
+            statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
             order = 'kinds'
         if 'bottom' in w:
             sort = 'ASC'
@@ -257,7 +257,7 @@ def countries_command(command):
         else:
             statement4 = 'AND C1.Region="' + region + '"'
 
-    statement = statement1 + statement2 + statement5 + statement3 + ' HAVING COUNT(B.Id)>4 ' + statement4 + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
+    statement = statement1 + statement2 + statement5 + statement3 + ' HAVING COUNT(B.SpecificBeanBarName)>4 ' + statement4 + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
     # print(statement)
     cur.execute(statement)
     result = cur.fetchall()
@@ -268,7 +268,50 @@ def countries_command(command):
     return result
 
 def regions_command(command):
-    pass
+    conn = sqlite3.connect(DBNAME)
+    cur = conn.cursor()
+    words = command.split()
+    sellcountry = ''
+    region = ''
+    statement1 = 'SELECT C1.Region, '
+    statement2 = 'AVG(B.Rating) AS ratings '
+    statement3 = 'GROUP BY C1.Region'
+    order = 'ratings'
+    sort = 'DESC'
+    limit = 10
+    
+    statement5 = '''
+        FROM Bars B
+        JOIN Countries C1
+            ON B.CompanyLocationId = C1.Id
+        JOIN Countries C2
+            ON B.BroadBeanOriginId = C2.Id
+    '''
+    for w in words:
+        if 'sources' in w:
+            statement1 = 'SELECT C2.Region, '
+            statement3 = 'GROUP BY C2.Region'
+        if 'cocoa' in w:
+            statement2 = 'AVG(B.CocoaPercent) AS cocoas'
+            order = 'cocoas'
+        if 'bars_sold' in w:
+            statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
+            order = 'kinds'
+        if 'bottom' in w:
+            sort = 'ASC'
+            limit = int(w[w.index('=')+1:])
+        if 'top' in w:
+            limit = int(w[w.index('=')+1:])
+
+    statement = statement1 + statement2 + statement5 + statement3 + ' HAVING COUNT(B.SpecificBeanBarName)>4 ' + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
+    # print(statement)
+    cur.execute(statement)
+    result = cur.fetchall()
+    conn.close()
+
+    # print(pp(cur, result, rowlens=1))
+
+    return result
 
 def process_command(command):
     if 'bars' in command[:10]:
@@ -334,4 +377,4 @@ if __name__=="__main__":
     init_db()
     insert_json_data()
     insert_csv_data()
-    process_command('countries sellers bars_sold top=5')
+    process_command('regions sellers ratings top=10')
