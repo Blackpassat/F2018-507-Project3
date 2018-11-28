@@ -117,6 +117,7 @@ def bars_command(command):
     order = 'B.Rating'
     sort = 'DESC'
     limit = 10
+    
     statement1 = '''
         SELECT B.SpecificBeanBarName,B.Company, C1.EnglishName, B.Rating, B.CocoaPercent, C2.EnglishName
         FROM Bars B
@@ -125,26 +126,66 @@ def bars_command(command):
         LEFT JOIN Countries C2
             ON B.BroadBeanOriginId = C2.Id
     '''
+    l = len(words)
     for w in words:
+        check_input_flag = False
         if 'sellcountry' in w:
-            sellcountry = w[w.index('=')+1:]
+            if '=' in w:
+                sellcountry = w[w.index('=')+1:]
             statement2 = 'WHERE C1.Alpha2="' + sellcountry + '"'
+            if '=' in w:
+                if w[:w.index('=')] == 'sellcountry' and sellcountry != '':
+                    check_input_flag = True
         if 'sourcecountry' in w:
-            sourcecountry = w[w.index('=')+1:]
+            if '=' in w:
+                sourcecountry = w[w.index('=')+1:]
             statement2 = 'WHERE C2.Alpha2="' + sourcecountry + '"'
+            if '=' in w:
+                if w[:w.index('=')] == 'sourcecountry' and sourcecountry != '':
+                    check_input_flag = True
         if 'sellregion' in w:
-            sellregion = w[w.index('=')+1:]
+            if '=' in w:
+                sellregion = w[w.index('=')+1:]
             statement2 = 'WHERE C1.Region="' + sellregion + '"'
+            if '=' in w:
+                if w[:w.index('=')] == 'sellregion' and sellregion != '':
+                    check_input_flag = True
         if 'sourceregion' in w:
-            sourceregion = w[w.index('=')+1:]
+            if '=' in w:
+                sourceregion = w[w.index('=')+1:]
             statement2 = 'WHERE C2.Region="' + sourceregion + '"'
-        if 'cocoa' in w:
+            if '=' in w:
+                if w[:w.index('=')] == 'sourceregion' and sourceregion != '':
+                    check_input_flag = True
+        if w == 'cocoa':
             order = 'B.CocoaPercent'
+            check_input_flag = True
         if 'bottom' in w:
             sort = 'ASC'
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except ValueError:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'bottom':
+                        check_input_flag = True
         if 'top' in w:
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except ValueError:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'top':
+                        check_input_flag = True
+        if w == 'ratings':
+            check_input_flag = True
+        if w == 'bars' and l >= 1:
+            check_input_flag = True
+
+        if not check_input_flag:
+            return ''
 
     if sellcountry=='' and sourcecountry=='' and sellregion=='' and sourceregion=='':
         statement2 = ''
@@ -169,6 +210,8 @@ def companies_command(command):
     sort = 'DESC'
     limit = 10
     statement1 = 'SELECT B.Company, C1.EnglishName, '
+    
+    l = len(words)
     statement3 = '''
         FROM Bars B
         JOIN Countries C1
@@ -177,23 +220,53 @@ def companies_command(command):
         HAVING COUNT(B.SpecificBeanBarName) > 4
     '''
     for w in words:
+        check_input_flag = False
         if 'country' in w:
-            sellcountry = w[w.index('=')+1:]
+            if '=' in w:
+                sellcountry = w[w.index('=')+1:]
+                if w[:w.index('=')] == 'country' and sellcountry != '':
+                    check_input_flag = True
             statement4 = 'AND C1.Alpha2="' + sellcountry + '"'
         if 'region' in w:
-            sellregion = w[w.index('=')+1:]
+            if '=' in w:
+                sellregion = w[w.index('=')+1:]
+                if w[:w.index('=')] == 'region' and sellregion != '':
+                    check_input_flag = True
             statement4 = 'AND C1.Region="' + sellregion + '"'
-        if 'cocoa' in w:
+        if w == 'cocoa':
             statement2 = 'AVG(B.CocoaPercent) AS cocoas'
             order = 'cocoas'
-        if 'bars_sold' in w:
+            check_input_flag = True
+        if w == 'bars_sold':
             statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
             order = 'kinds'
+            check_input_flag = True
         if 'bottom' in w:
             sort = 'ASC'
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'bottom':
+                        check_input_flag = True
         if 'top' in w:
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'top':
+                        check_input_flag = True
+        if w == 'ratings':
+            check_input_flag = True
+        if w == 'companies' and l >= 1:
+            check_input_flag = True
+
+        if not check_input_flag:
+            return ''
 
     if sellcountry=='' and sellregion=='':
         statement4 = ''
@@ -223,7 +296,7 @@ def countries_command(command):
     limit = 10
     region_flag = False
     source_flag = False
-    
+    l = len(words)
     statement5 = '''
         FROM Bars B
         LEFT JOIN Countries C1
@@ -232,24 +305,54 @@ def countries_command(command):
             ON B.BroadBeanOriginId = C2.Id
     '''
     for w in words:
+        check_input_flag = False
         if 'region' in w:
+            if '=' in w:
+                region = w[w.index('=')+1:]
+                if w[:w.index('=')] == 'region' and region != '':
+                    check_input_flag = True
             region_flag = True
-            region = w[w.index('=')+1:]
-        if 'sources' in w:
+        if w == 'sources':
             source_flag = True
             statement1 = 'SELECT C2.EnglishName, C2.Region, '
             statement3 = 'GROUP BY C2.Id'
-        if 'cocoa' in w:
+            check_input_flag = True
+        if w == 'cocoa':
             statement2 = 'AVG(B.CocoaPercent) AS cocoas'
             order = 'cocoas'
-        if 'bars_sold' in w:
+            check_input_flag = True
+        if w == 'bars_sold':
             statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
             order = 'kinds'
+            check_input_flag = True
         if 'bottom' in w:
             sort = 'ASC'
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except ValueError:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'bottom':
+                        check_input_flag = True
         if 'top' in w:
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except ValueError:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'top':
+                        check_input_flag = True
+        if w == 'sellers':
+            check_input_flag = True
+        if w == 'ratings':
+            check_input_flag = True
+        if w == 'countries' and l >= 1:
+            check_input_flag = True
+
+        if not check_input_flag:
+            return ''
 
     if region_flag:
         if source_flag:
@@ -280,7 +383,7 @@ def regions_command(command):
     order = 'ratings'
     sort = 'DESC'
     limit = 10
-    
+    l = len(words)
     statement5 = '''
         FROM Bars B
         LEFT JOIN Countries C1
@@ -289,21 +392,48 @@ def regions_command(command):
             ON B.BroadBeanOriginId = C2.Id
     '''
     for w in words:
-        if 'sources' in w:
+        check_input_flag = False
+        if w == 'sources':
             statement1 = 'SELECT C2.Region, '
             statement3 = 'GROUP BY C2.Region'
             statement4 = 'AND C2.Region IS NOT NULL'
-        if 'cocoa' in w:
+            check_input_flag = True
+        if w == 'cocoa':
             statement2 = 'AVG(B.CocoaPercent) AS cocoas'
             order = 'cocoas'
-        if 'bars_sold' in w:
+            check_input_flag = True
+        if w == 'bars_sold':
             statement2 = 'COUNT(B.SpecificBeanBarName) AS kinds'
             order = 'kinds'
+            check_input_flag = True
         if 'bottom' in w:
             sort = 'ASC'
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except ValueError:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'bottom':
+                        check_input_flag = True
         if 'top' in w:
-            limit = int(w[w.index('=')+1:])
+            if '=' in w:
+                try:
+                    limit = int(w[w.index('=')+1:])
+                except ValueError:
+                    limit = ''
+                else:
+                    if w[:w.index('=')] == 'top':
+                        check_input_flag = True
+        if w == 'sellers':
+            check_input_flag = True
+        if w == 'ratings':
+            check_input_flag = True
+        if w == 'regions' and l >= 1:
+            check_input_flag = True
+
+        if not check_input_flag:
+            return ''
 
     statement = statement1 + statement2 + statement5 + statement3 + ' HAVING COUNT(B.SpecificBeanBarName)>4 ' + statement4 + ' ORDER BY ' + order + ' ' + sort + ' LIMIT ' + str(limit)
     # print(statement)
@@ -325,11 +455,9 @@ def process_command(command):
     elif 'regions' in command:
         result = regions_command(command)
     elif command == 'exit':
-        result = ''
-        print('Bye!')
+        result = 'Bye'
     else:
-        print('Invalid input. Type <help> for instructions. ')
-        result = []
+        result = ''
 
     return result
 
@@ -368,8 +496,6 @@ def load_help_text():
 # Part 3: Implement interactive prompt. We've started for you!
 def nice_print(result):
     MAX_LENGTH = 15
-    if result == []:
-        print('Nothing Found. ')
     for item in result:
         line = ''
         for i in item:
@@ -394,11 +520,18 @@ def interactive_prompt():
     while response != 'exit':
         response = input('Enter a command: ')
         result = process_command(response)
-        nice_print(result)
+        if result == []:
+            print('Nothing Found. ')
+        elif result == '':
+            print('Invalid Input. Type <help> for instructions.')
+        elif result == 'Bye':
+            print(result)
+        else:
+            nice_print(result)
         if response == 'help':
             print(help_text)
             continue
-
+        print('')
 # Make sure nothing runs or prints out when this file is run as a module
 if __name__=="__main__":
     init_db()
